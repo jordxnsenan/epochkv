@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/key_value_store_tests.dir/tests/KeyValueStoreTests.cpp.o -o key_value_store_tests  libepochkv_core.a
