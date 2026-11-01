@@ -9,11 +9,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(
     epochkv_core
     src/storage/KeyValueStore.cpp
+    src/storage/LogStore.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
 
-target_compile_options(epochkv_core PRIVATE
+target_compile_options(
+    epochkv_core PRIVATE
     -Wall
     -Wextra
     -Wpedantic
@@ -30,4 +32,13 @@ if(BUILD_TESTING)
     target_link_libraries(key_value_store_tests PRIVATE epochkv_core)
 
     add_test(NAME KeyValueStore COMMAND key_value_store_tests)
+
+    add_executable(
+        log_store_tests
+        tests/LogStoreTests.cpp
+    )
+
+    target_link_libraries(log_store_tests PRIVATE epochkv_core)
+
+    add_test(NAME LogStore COMMAND log_store_tests)
 endif()

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libepochkv_core.a CMakeFiles/epochkv_core.dir/src/storage/KeyValueStore.cpp.o
-/usr/bin/ranlib libepochkv_core.a

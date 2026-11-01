@@ -1,2 +1,0 @@
-KeyValueStore 1 0.126022
----

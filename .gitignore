@@ -1,0 +1,19 @@
+# build output
+/build/
+/cmake-build-*/
+/out/
+
+# local db storage
+/data/
+
+# editor settings
+/.vscode/
+/.idea/
+
+# macOS files
+.DS_Store
+*.dSYM/
+
+# local dev. files
+.env
+.env.local
