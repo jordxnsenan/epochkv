@@ -10,6 +10,7 @@ add_library(
     epochkv_core
     src/storage/KeyValueStore.cpp
     src/storage/LogStore.cpp
+    src/Database.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
@@ -41,4 +42,15 @@ if(BUILD_TESTING)
     target_link_libraries(log_store_tests PRIVATE epochkv_core)
 
     add_test(NAME LogStore COMMAND log_store_tests)
+
+
+    add_executable(
+        database_tests
+        tests/DatabaseTests.cpp
+    )
+
+    target_link_libraries(database_tests PRIVATE epochkv_core)
+
+    add_test(NAME Database COMMAND database_tests)
+
 endif()
