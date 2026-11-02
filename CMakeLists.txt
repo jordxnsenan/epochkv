@@ -22,6 +22,12 @@ target_compile_options(
     -Wpedantic
 )
 
+add_executable(epochkv
+    src/main.cpp
+)
+
+target_link_libraries(epochkv PRIVATE epochkv_core)
+
 include(CTest)
 
 if(BUILD_TESTING)
@@ -52,5 +58,13 @@ if(BUILD_TESTING)
     target_link_libraries(database_tests PRIVATE epochkv_core)
 
     add_test(NAME Database COMMAND database_tests)
+
+
+    add_test(
+        NAME CommandLine
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/CliTests.sh"
+        "$<TARGET_FILE:epochkv>"
+    )
 
 endif()
