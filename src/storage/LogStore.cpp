@@ -18,10 +18,6 @@ namespace epochkv
 {
     namespace
     {
-
-        constexpr std::size_t MAX_KEY_BYTES = 256;
-        constexpr std::size_t MAX_VALUE_BYTES = 4096;
-
         constexpr std::uint8_t RECORD_FORMAT_VERSION = 1;
 
         // used to extract individual bytes when encoding ints.

@@ -12,6 +12,7 @@ add_library(
     src/storage/LogStore.cpp
     src/Database.cpp
     src/network/MessageIO.cpp
+    src/network/ReplicationIO.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
@@ -99,5 +100,13 @@ if(BUILD_TESTING)
         "$<TARGET_FILE:epochkv_server>"
         "$<TARGET_FILE:epochkv_client>"
     )
+
+    add_executable(replication_io_tests
+        tests/ReplicationIOTests.cpp
+    )
+
+    target_link_libraries(replication_io_tests PRIVATE epochkv_core)
+
+    add_test(NAME ReplicationIO COMMAND replication_io_tests)
 
 endif()
