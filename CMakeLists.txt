@@ -31,6 +31,20 @@ target_link_libraries(epochkv PRIVATE epochkv_core)
 
 include(CTest)
 
+add_executable(
+    epochkv_server
+    src/network/ServerMain.cpp
+)
+
+target_link_libraries(epochkv_server PRIVATE epochkv_core)
+
+add_executable(
+    epochkv_client
+    src/network/ClientMain.cpp
+)
+
+target_link_libraries(epochkv_client PRIVATE epochkv_core)
+
 if(BUILD_TESTING)
     add_executable(
         key_value_store_tests
@@ -77,5 +91,13 @@ if(BUILD_TESTING)
     target_link_libraries(message_io_tests PRIVATE epochkv_core)
 
     add_test(NAME MessageIO COMMAND message_io_tests)
+
+    add_test(
+        NAME NetworkCommands
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/NetworkTests.sh"
+        "$<TARGET_FILE:epochkv_server>"
+        "$<TARGET_FILE:epochkv_client>"
+    )
 
 endif()
