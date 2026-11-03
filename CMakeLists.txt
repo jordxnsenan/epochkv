@@ -11,6 +11,7 @@ add_library(
     src/storage/KeyValueStore.cpp
     src/storage/LogStore.cpp
     src/Database.cpp
+    src/network/MessageIO.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
@@ -66,5 +67,15 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/CliTests.sh"
         "$<TARGET_FILE:epochkv>"
     )
+
+
+    add_executable(
+        message_io_tests
+        tests/MessageIOTests.cpp
+    )
+
+    target_link_libraries(message_io_tests PRIVATE epochkv_core)
+
+    add_test(NAME MessageIO COMMAND message_io_tests)
 
 endif()
