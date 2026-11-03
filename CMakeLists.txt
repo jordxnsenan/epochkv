@@ -13,6 +13,7 @@ add_library(
     src/Database.cpp
     src/network/MessageIO.cpp
     src/network/ReplicationIO.cpp
+    src/replication/BackupStore.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
@@ -45,6 +46,13 @@ add_executable(
 )
 
 target_link_libraries(epochkv_client PRIVATE epochkv_core)
+
+add_executable(
+    epochkv_backup
+    src/network/BackupMain.cpp
+)
+
+target_link_libraries(epochkv_backup PRIVATE epochkv_core)
 
 if(BUILD_TESTING)
     add_executable(
@@ -108,5 +116,15 @@ if(BUILD_TESTING)
     target_link_libraries(replication_io_tests PRIVATE epochkv_core)
 
     add_test(NAME ReplicationIO COMMAND replication_io_tests)
+
+
+    add_executable(
+        backup_store_tests
+        tests/BackupStoreTests.cpp
+    )
+
+    target_link_libraries(backup_store_tests PRIVATE epochkv_core)
+
+    add_test(NAME BackupStore COMMAND backup_store_tests)
 
 endif()
