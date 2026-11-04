@@ -20,15 +20,25 @@ namespace epochkv
         std::optional<std::string> get(const std::string &key) const;
         bool erase(const std::string &key);
 
+        std::uint64_t preparePut(const std::string &key, const std::string &value);
+        std::optional<std::uint64_t> prepareDelete(const std::string &key);
+        void commitPrepared(std::uint64_t sequence_number);
+
+        std::optional<LogRecord> pendingOperation() const;
+        std::uint64_t lastCommittedSequence() const;
+
     private:
         LogStore log_store_;
         KeyValueStore key_value_store_;
+
         std::uint64_t next_sequence_number_ = 1;
+        std::uint64_t last_committed_sequence_ = 0;
+        std::optional<LogRecord> pending_operation_;
         bool requires_restart_ = false;
 
         void recover();
         void apply(const LogRecord &operation);
-        void commitOperation(const LogRecord &operation);
+        std::uint64_t prepareOperation(const LogRecord &operation);
         void ensureReady() const;
     };
 
