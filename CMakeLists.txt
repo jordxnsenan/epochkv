@@ -16,6 +16,7 @@ add_library(
     src/replication/BackupStore.cpp
     src/replication/BackupClient.cpp
     src/replication/PrimaryReplicator.cpp
+    src/replication/LogHistory.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
@@ -210,5 +211,14 @@ if(BUILD_TESTING)
         "$<TARGET_FILE:backup_history_tests>"
         "$<TARGET_FILE:backup_protocol_client>"
     )
+
+    add_executable(
+        log_history_tests
+        tests/LogHistoryTests.cpp
+    )
+
+    target_link_libraries(log_history_tests PRIVATE epochkv_core)
+
+    add_test(NAME LogHistory COMMAND log_history_tests)
 
 endif()
