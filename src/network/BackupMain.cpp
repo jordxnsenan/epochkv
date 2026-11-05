@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <vector>
 
 namespace
 {
@@ -89,6 +90,22 @@ namespace
                     epochkv::sendMessage(client_socket, "STATUS");
                     epochkv::sendMessage(client_socket, std::to_string(backup_status.last_committed_sequence));
                     epochkv::sendMessage(client_socket, std::to_string(backup_status.pending_sequence));
+
+                    continue;
+                }
+
+                if (*request_type == "HISTORY")
+                {
+                    std::vector<epochkv::LogRecord> records = backup_store.history();
+
+                    epochkv::sendMessage(client_socket, "HISTORY");
+
+                    for (const epochkv::LogRecord &record : records)
+                    {
+                        epochkv::sendReplicationRecord(client_socket, record);
+                    }
+
+                    epochkv::sendMessage(client_socket, "END");
 
                     continue;
                 }

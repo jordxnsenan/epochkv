@@ -202,4 +202,53 @@ namespace epochkv
         return backup_status;
     }
 
+    std::vector<LogRecord> BackupClient::history() const
+    {
+        int socket_descriptor = connectToBackup(backup_port_);
+
+        std::vector<LogRecord> records;
+
+        try
+        {
+            sendMessage(socket_descriptor, "HISTORY");
+
+            auto response_type = receiveMessage(socket_descriptor);
+
+            if (!response_type || *response_type != "HISTORY")
+            {
+                throw std::runtime_error("Unexpected backup history response");
+            }
+
+            while (true)
+            {
+                auto record_type = receiveMessage(socket_descriptor);
+
+                if (!record_type)
+                {
+                    throw std::runtime_error("Connection closed during history transfer");
+                }
+
+                if (*record_type == "END")
+                {
+                    break;
+                }
+
+                LogRecord record = receiveReplicationRecord(socket_descriptor, *record_type);
+
+                records.push_back(record);
+            }
+        }
+
+        catch (...)
+        {
+            ::close(socket_descriptor);
+
+            throw;
+        }
+
+        ::close(socket_descriptor);
+
+        return records;
+    }
+
 }

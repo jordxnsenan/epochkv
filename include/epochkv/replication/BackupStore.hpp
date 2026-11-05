@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace epochkv
 {
@@ -21,6 +22,8 @@ namespace epochkv
         bool requiresRestart() const;
 
         BackupStatus status() const;
+
+        std::vector<LogRecord> history();
 
     private:
         LogStore log_store_;

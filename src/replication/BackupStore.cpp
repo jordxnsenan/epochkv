@@ -179,4 +179,14 @@ namespace epochkv
         return backup_status;
     }
 
+    std::vector<LogRecord> BackupStore::history()
+    {
+        if (requires_restart_)
+        {
+            throw std::runtime_error("Backup must restart after a failed log write");
+        }
+
+        return log_store_.readAll();
+    }
+
 }

@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <vector>
 
 namespace epochkv
 {
@@ -19,6 +20,8 @@ namespace epochkv
         void commit(std::uint64_t sequence_number) const;
 
         BackupStatus status() const;
+
+        std::vector<LogRecord> history() const;
 
     private:
         std::uint16_t backup_port_;

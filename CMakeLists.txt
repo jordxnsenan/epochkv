@@ -194,4 +194,21 @@ if(BUILD_TESTING)
         "$<TARGET_FILE:backup_protocol_client>"
     )
 
+
+    add_executable(
+        backup_history_tests
+        tests/BackupHistoryTests.cpp
+    )
+
+    target_link_libraries(backup_history_tests PRIVATE epochkv_core)
+
+    add_test(
+        NAME BackupHistory
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/BackupHistoryTests.sh"
+        "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:backup_history_tests>"
+        "$<TARGET_FILE:backup_protocol_client>"
+    )
+
 endif()
