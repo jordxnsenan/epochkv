@@ -14,6 +14,7 @@ add_library(
     src/network/MessageIO.cpp
     src/network/ReplicationIO.cpp
     src/replication/BackupStore.cpp
+    src/replication/BackupClient.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
@@ -140,6 +141,23 @@ if(BUILD_TESTING)
         COMMAND /bin/sh
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/BackupNetworkTests.sh"
         "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:backup_protocol_client>"
+    )
+
+
+    add_executable(
+        backup_client_tests
+        tests/BackupClientTests.cpp
+    )
+
+    target_link_libraries(backup_client_tests PRIVATE epochkv_core)
+
+    add_test(
+        NAME BackupClient
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/BackupClientTests.sh"
+        "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:backup_client_tests>"
         "$<TARGET_FILE:backup_protocol_client>"
     )
 
