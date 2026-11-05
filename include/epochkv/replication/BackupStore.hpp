@@ -1,6 +1,7 @@
 #pragma once
 
 #include "epochkv/storage/LogStore.hpp"
+#include "epochkv/replication/BackupStatus.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -18,6 +19,8 @@ namespace epochkv
         std::string processRecord(const LogRecord &record);
 
         bool requiresRestart() const;
+
+        BackupStatus status() const;
 
     private:
         LogStore log_store_;

@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <charconv>
+#include <limits>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -76,6 +78,20 @@ namespace epochkv
             return socket_descriptor;
         }
 
+        std::uint64_t parseStatusNumber(const std::string &text)
+        {
+            std::uint64_t number = 0;
+
+            auto result = std::from_chars(text.data(), text.data() + text.size(), number);
+
+            if (result.ec != std::errc{} || result.ptr != text.data() + text.size())
+            {
+                throw std::runtime_error("Backup returned an invalid sequence number");
+            }
+
+            return number;
+        }
+
     }
 
     BackupClient::BackupClient(std::uint16_t backup_port)
@@ -132,6 +148,58 @@ namespace epochkv
         }
 
         ::close(socket_descriptor);
+    }
+
+    BackupStatus BackupClient::status() const
+    {
+        int socket_descriptor = connectToBackup(backup_port_);
+
+        BackupStatus backup_status;
+
+        try
+        {
+            sendMessage(socket_descriptor, "STATUS");
+
+            auto response_type = receiveMessage(socket_descriptor);
+
+            if (!response_type || *response_type != "STATUS")
+            {
+                throw std::runtime_error("Unexpected backup status response");
+            }
+
+            auto committed_text = receiveMessage(socket_descriptor);
+            auto pending_text = receiveMessage(socket_descriptor);
+
+            if (!committed_text || !pending_text)
+            {
+                throw std::runtime_error("Incomplete backup status response");
+            }
+
+            backup_status.last_committed_sequence = parseStatusNumber(*committed_text);
+            backup_status.pending_sequence = parseStatusNumber(*pending_text);
+
+            if (backup_status.pending_sequence != 0)
+            {
+                bool sequence_overflow = (backup_status.last_committed_sequence == std::numeric_limits<std::uint64_t>::max());
+
+                if (sequence_overflow ||
+                    backup_status.pending_sequence !=
+                        backup_status.last_committed_sequence + 1)
+                {
+                    throw std::runtime_error("Backup reported inconsistent sequences");
+                }
+            }
+        }
+        catch (...)
+        {
+            ::close(socket_descriptor);
+
+            throw;
+        }
+
+        ::close(socket_descriptor);
+
+        return backup_status;
     }
 
 }

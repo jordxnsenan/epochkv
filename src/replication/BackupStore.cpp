@@ -160,4 +160,23 @@ namespace epochkv
         }
     }
 
+    BackupStatus BackupStore::status() const
+    {
+        if (requires_restart_)
+        {
+            throw std::runtime_error("Backup must restart after a failed log write");
+        }
+
+        BackupStatus backup_status;
+
+        backup_status.last_committed_sequence = last_committed_sequence_;
+
+        if (pending_operation_)
+        {
+            backup_status.pending_sequence = pending_operation_->sequence_number;
+        }
+
+        return backup_status;
+    }
+
 }

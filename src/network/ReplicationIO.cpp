@@ -131,19 +131,11 @@ namespace epochkv
         sendMessage(socket_descriptor, record.value);
     }
 
-    std::optional<LogRecord> receiveReplicationRecord(int socket_descriptor)
+    LogRecord receiveReplicationRecord(int socket_descriptor, const std::string &type_text)
     {
-        auto type_text = receiveMessage(socket_descriptor);
+        LogRecordType type = textToRecordType(type_text);
 
-        if (!type_text)
-        {
-            return std::nullopt;
-        }
-
-        LogRecordType type = textToRecordType(*type_text);
-
-        std::uint64_t sequence_number = parseSequenceNumber(
-            readRequiredMessage(socket_descriptor));
+        std::uint64_t sequence_number = parseSequenceNumber(readRequiredMessage(socket_descriptor));
 
         std::string key = readRequiredMessage(socket_descriptor);
         std::string value = readRequiredMessage(socket_descriptor);
@@ -154,4 +146,17 @@ namespace epochkv
 
         return record;
     }
+
+    std::optional<LogRecord> receiveReplicationRecord(int socket_descriptor)
+    {
+        auto type_text = receiveMessage(socket_descriptor);
+
+        if (!type_text)
+        {
+            return std::nullopt;
+        }
+
+        return receiveReplicationRecord(socket_descriptor, *type_text);
+    }
+
 }

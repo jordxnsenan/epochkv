@@ -75,18 +75,31 @@ namespace
         {
             while (true)
             {
-                auto received_record = epochkv::receiveReplicationRecord(client_socket);
+                auto request_type = epochkv::receiveMessage(client_socket);
 
-                if (!received_record)
+                if (!request_type)
                 {
                     return;
                 }
+
+                if (*request_type == "STATUS")
+                {
+                    epochkv::BackupStatus backup_status = backup_store.status();
+
+                    epochkv::sendMessage(client_socket, "STATUS");
+                    epochkv::sendMessage(client_socket, std::to_string(backup_status.last_committed_sequence));
+                    epochkv::sendMessage(client_socket, std::to_string(backup_status.pending_sequence));
+
+                    continue;
+                }
+
+                epochkv::LogRecord record = epochkv::receiveReplicationRecord(client_socket, *request_type);
 
                 std::string response;
 
                 try
                 {
-                    response = backup_store.processRecord(*received_record);
+                    response = backup_store.processRecord(record);
                 }
 
                 catch (const std::exception &error)
@@ -102,7 +115,8 @@ namespace
 
         catch (const std::exception &error)
         {
-            std::cerr << "Replication connection failed: " << error.what() << '\n';
+            std::cerr << "Replication connection failed: "
+                      << error.what() << '\n';
         }
     }
 

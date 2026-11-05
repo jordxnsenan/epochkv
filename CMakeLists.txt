@@ -178,4 +178,20 @@ if(BUILD_TESTING)
         "$<TARGET_FILE:backup_protocol_client>"
     )
 
+    add_executable(
+        backup_status_tests
+        tests/BackupStatusTests.cpp
+    )
+
+    target_link_libraries(backup_status_tests PRIVATE epochkv_core)
+
+    add_test(
+        NAME BackupStatus
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/BackupStatusTests.sh"
+        "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:backup_status_tests>"
+        "$<TARGET_FILE:backup_protocol_client>"
+    )
+
 endif()
