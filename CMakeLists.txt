@@ -15,6 +15,7 @@ add_library(
     src/network/ReplicationIO.cpp
     src/replication/BackupStore.cpp
     src/replication/BackupClient.cpp
+    src/replication/PrimaryReplicator.cpp
 )
 
 target_include_directories(epochkv_core PUBLIC include)
@@ -158,6 +159,22 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/BackupClientTests.sh"
         "$<TARGET_FILE:epochkv_backup>"
         "$<TARGET_FILE:backup_client_tests>"
+        "$<TARGET_FILE:backup_protocol_client>"
+    )
+
+    add_executable(
+        primary_replicator_tests
+        tests/PrimaryReplicatorTests.cpp
+    )
+
+    target_link_libraries(primary_replicator_tests PRIVATE epochkv_core)
+
+    add_test(
+        NAME PrimaryReplicator
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/PrimaryReplicatorTests.sh"
+        "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:primary_replicator_tests>"
         "$<TARGET_FILE:backup_protocol_client>"
     )
 
