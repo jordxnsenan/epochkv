@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace epochkv
 {
@@ -26,6 +27,8 @@ namespace epochkv
 
         std::optional<LogRecord> pendingOperation() const;
         std::uint64_t lastCommittedSequence() const;
+
+        std::vector<LogRecord> history();
 
     private:
         LogStore log_store_;

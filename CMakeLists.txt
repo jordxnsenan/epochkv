@@ -221,4 +221,19 @@ if(BUILD_TESTING)
 
     add_test(NAME LogHistory COMMAND log_history_tests)
 
+    add_executable(reconciliation_tests
+        tests/ReconciliationTests.cpp
+    )
+
+    target_link_libraries(reconciliation_tests PRIVATE epochkv_core)
+
+    add_test(
+        NAME Reconciliation
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/ReconciliationTests.sh"
+        "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:reconciliation_tests>"
+        "$<TARGET_FILE:backup_protocol_client>"
+    )
+
 endif()

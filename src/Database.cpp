@@ -201,4 +201,11 @@ namespace epochkv
         }
     }
 
+    std::vector<LogRecord> Database::history()
+    {
+        ensureReady();
+        
+        return log_store_.readAll();
+    }
+
 }

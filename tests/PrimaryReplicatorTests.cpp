@@ -28,6 +28,8 @@ void testSuccessfulReplication(
     epochkv::BackupClient backup_client(backup_port);
     epochkv::PrimaryReplicator replicator(primary, backup_client);
 
+    replicator.reconcile();
+
     replicator.put("user:1", "Alice");
     replicator.put("user:2", "Bob");
 
@@ -84,40 +86,37 @@ void testUnavailableBackup(
     epochkv::BackupClient backup_client(backup_port);
     epochkv::PrimaryReplicator replicator(primary, backup_client);
 
-    bool failed = false;
+    bool reconciliation_failed = false;
+
+    try
+    {
+        replicator.reconcile();
+    }
+
+    catch (const std::exception &)
+    {
+        reconciliation_failed = true;
+    }
+
+    require(reconciliation_failed,
+            "startup reconciliation fails when the backup is unavailable");
+
+    bool write_blocked = false;
 
     try
     {
         replicator.put("unfinished", "hidden");
     }
 
-    catch (const std::exception &)
-    {
-        failed = true;
-    }
-
-    require(failed, "write fails when backup is unavailable");
-    require(primary.pendingOperation().has_value(), "primary retains its prepared operation");
-
-    require(!primary.get("unfinished").has_value(), "uncommitted value is not applied locally");
-
-    bool blocked = false;
-
-    try
-    {
-        replicator.put("another", "value");
-    }
-
     catch (const std::runtime_error &)
     {
-        blocked = true;
+        write_blocked = true;
     }
 
-    require(blocked, "further writes require reconciliation");
+    require(write_blocked, "writes remain blocked without reconciliation");
 
-    epochkv::Database recovered_primary(primary_log);
-
-    require(recovered_primary.pendingOperation().has_value(), "unfinished operation survives restart");
+    require(!primary.pendingOperation().has_value(),
+            "no operation is prepared before startup synchronization");
 }
 
 int main(int argument_count, char *arguments[])
