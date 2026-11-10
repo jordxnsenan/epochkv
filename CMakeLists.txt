@@ -236,4 +236,14 @@ if(BUILD_TESTING)
         "$<TARGET_FILE:backup_protocol_client>"
     )
 
+    add_test(
+        NAME ReplicatedServer
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/ReplicatedServerTests.sh"
+        "$<TARGET_FILE:epochkv_server>"
+        "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:epochkv_client>"
+        "$<TARGET_FILE:backup_protocol_client>"
+    )
+
 endif()

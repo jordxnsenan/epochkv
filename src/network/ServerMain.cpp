@@ -1,12 +1,15 @@
 #include "epochkv/Database.hpp"
 #include "epochkv/network/MessageIO.hpp"
 #include "epochkv/network/Port.hpp"
+#include "epochkv/replication/BackupClient.hpp"
+#include "epochkv/replication/PrimaryReplicator.hpp"
 
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -34,9 +37,8 @@ namespace
         {
             int reuse_address = 1;
 
-            if (::setsockopt(listening_socket,
-                             SOL_SOCKET, SO_REUSEADDR,
-                             &reuse_address,
+            if (::setsockopt(listening_socket, SOL_SOCKET,
+                             SO_REUSEADDR, &reuse_address,
                              sizeof(reuse_address)) == -1)
             {
                 throw std::system_error(errno, std::generic_category(), "Failed to configure server socket");
@@ -84,6 +86,7 @@ namespace
     }
 
     std::string executeCommand(int client_socket, epochkv::Database &database,
+                               epochkv::PrimaryReplicator *replicator,
                                const std::string &command)
     {
         if (command != "put" && command != "get" && command != "delete")
@@ -102,22 +105,33 @@ namespace
         {
             std::string value = readRequiredMessage(client_socket);
 
-            database.put(key, value);
+            if (replicator)
+            {
+                replicator->put(key, value);
+            }
+
+            else
+            {
+                database.put(key, value);
+            }
 
             return "OK";
         }
 
         if (command == "get")
         {
-            auto value = database.get(key);
+            auto value = replicator ? replicator->get(key) : database.get(key);
 
             return value ? "VALUE " + *value : "NOT_FOUND";
         }
 
-        return database.erase(key) ? "OK" : "NOT_FOUND";
+        bool was_deleted = replicator ? replicator->erase(key) : database.erase(key);
+
+        return was_deleted ? "OK" : "NOT_FOUND";
     }
 
-    void handleClient(int client_socket, epochkv::Database &database)
+    void handleClient(int client_socket, epochkv::Database &database,
+                      epochkv::PrimaryReplicator *replicator)
     {
         try
         {
@@ -132,7 +146,7 @@ namespace
 
             try
             {
-                response = executeCommand(client_socket, database, *command);
+                response = executeCommand(client_socket, database, replicator, *command);
             }
 
             catch (const std::exception &error)
@@ -142,6 +156,7 @@ namespace
 
             epochkv::sendMessage(client_socket, response);
         }
+
         catch (const std::exception &error)
         {
             std::cerr << "Client connection failed: " << error.what() << '\n';
@@ -152,19 +167,23 @@ namespace
 
 int main(int argument_count, char *arguments[])
 {
-    if (argument_count != 3)
+    bool valid_count = argument_count == 3 || argument_count == 5;
+    bool valid_option = argument_count != 5 || std::string(arguments[3]) == "--backup-port";
+
+    if (!valid_count || !valid_option)
     {
-        std::cerr << "Usage: epochkv_server <port> <log-file>\n";
+        std::cerr << "Usage:\n"
+                  << "  epochkv_server <port> <log-file>\n"
+                  << "  epochkv_server <port> <log-file> --backup-port <port>\n";
 
         return EXIT_FAILURE;
     }
 
     try
     {
-        // ensures disconnected clients don't terminate the server process
         std::signal(SIGPIPE, SIG_IGN);
 
-        std::uint16_t port = epochkv::parsePort(arguments[1]);
+        std::uint16_t server_port = epochkv::parsePort(arguments[1]);
         std::filesystem::path log_path = arguments[2];
 
         if (log_path.has_parent_path())
@@ -174,9 +193,29 @@ int main(int argument_count, char *arguments[])
 
         epochkv::Database database(log_path);
 
-        int listening_socket = createListeningSocket(port);
+        std::unique_ptr<epochkv::BackupClient> backup_client;
+        std::unique_ptr<epochkv::PrimaryReplicator> replicator;
 
-        std::cout << "EpochKV listening on 127.0.0.1:" << port << '\n';
+        if (argument_count == 5)
+        {
+            std::uint16_t backup_port = epochkv::parsePort(arguments[4]);
+
+            if (backup_port == server_port)
+            {
+                throw std::invalid_argument("Primary and backup ports must differ");
+            }
+
+            backup_client = std::make_unique<epochkv::BackupClient>(backup_port);
+            replicator = std::make_unique<epochkv::PrimaryReplicator>(
+                database, *backup_client);
+
+            replicator->reconcile();
+        }
+
+        int listening_socket = createListeningSocket(server_port);
+
+        std::cout << "EpochKV " << (replicator ? "primary" : "standalone")
+                  << " listening on 127.0.0.1:" << server_port << std::endl;
 
         while (true)
         {
@@ -193,15 +232,15 @@ int main(int argument_count, char *arguments[])
 
                 ::close(listening_socket);
 
-                throw std::system_error(error_number, std::generic_category(),
-                                        "Failed to accept client");
+                throw std::system_error(error_number, std::generic_category(), "Failed to accept client");
             }
 
-            handleClient(client_socket, database);
+            handleClient(client_socket, database, replicator.get());
 
             ::close(client_socket);
         }
     }
+
     catch (const std::exception &error)
     {
         std::cerr << "Error: " << error.what() << '\n';
