@@ -33,6 +33,28 @@ stop_backup() {
     fi
 }
 
+crash_primary()
+{
+    if [ -n "$primary_pid" ]; 
+    
+    then
+        kill -9 "$primary_pid" 2>/dev/null || true
+        wait "$primary_pid" 2>/dev/null || true
+        primary_pid=""
+    fi
+}
+
+crash_backup()
+{
+    if [ -n "$backup_pid" ]; 
+    
+    then
+        kill -9 "$backup_pid" 2>/dev/null || true
+        wait "$backup_pid" 2>/dev/null || true
+        backup_pid=""
+    fi
+}
+
 cleanup() {
     stop_primary
     stop_backup
@@ -147,7 +169,8 @@ start_primary
 check_output "VALUE Bob Smith" get user:2
 check_output "OK" put user:3 Carol
 
-stop_backup
+crash_backup
+
 
 if "$client" "$primary_port" put pending eventual \
     > "$test_directory/failure.out" 2>&1; 
@@ -164,15 +187,20 @@ then
     exit 1
 fi
 
-stop_primary
+crash_primary
 start_backup
 start_primary
 
+
+check_output "VALUE Carol" get user:3
 check_output "VALUE eventual" get pending
+check_output "NOT_FOUND" get user:1
 check_output "OK" put user:4 Dana
 
-stop_primary
-stop_backup
+# acknowledges writes must survive abrupt process termination
+crash_primary
+crash_backup
 check_logs_match
+
 
 echo "Replicated server tests passed"
