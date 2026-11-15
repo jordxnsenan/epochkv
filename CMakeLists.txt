@@ -246,4 +246,27 @@ if(BUILD_TESTING)
         "$<TARGET_FILE:backup_protocol_client>"
     )
 
+    add_executable(replication_crash_setup
+        tests/ReplicationCrashSetup.cpp
+    )
+
+    target_link_libraries(replication_crash_setup PRIVATE epochkv_core)
+
+    add_test(
+        NAME ReplicationCrashWindows
+        COMMAND /bin/sh
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/ReplicationCrashTests.sh"
+        "$<TARGET_FILE:epochkv_server>"
+        "$<TARGET_FILE:epochkv_backup>"
+        "$<TARGET_FILE:epochkv_client>"
+        "$<TARGET_FILE:backup_protocol_client>"
+        "$<TARGET_FILE:replication_crash_setup>"
+    )
+
+    add_executable(epochkv_benchmark
+        tools/Benchmark.cpp
+    )
+
+    target_link_libraries(epochkv_benchmark PRIVATE epochkv_core)
+
 endif()
