@@ -31,7 +31,13 @@ void testSuccessfulReplication(
     replicator.reconcile();
 
     replicator.put("user:1", "Alice");
+    
     replicator.put("user:2", "Bob");
+
+    auto timing = replicator.lastWriteTiming();
+
+    require(timing.has_value(),
+            "successful replicated write produces timing measurements");
 
     require(replicator.get("user:1") == "Alice",
             "primary stores replicated writes");
@@ -68,6 +74,11 @@ void testSuccessfulReplication(
     try
     {
         restarted_replicator.put("user:3", "Charlie");
+
+        auto timing = replicator.lastWriteTiming();
+
+        require(timing.has_value(),
+                "successful replicated write produces timing measurements");
     }
 
     catch (const std::runtime_error &)
@@ -106,6 +117,11 @@ void testUnavailableBackup(
     try
     {
         replicator.put("unfinished", "hidden");
+
+        auto timing = replicator.lastWriteTiming();
+
+        require(timing.has_value(),
+                "successful replicated write produces timing measurements");
     }
 
     catch (const std::runtime_error &)

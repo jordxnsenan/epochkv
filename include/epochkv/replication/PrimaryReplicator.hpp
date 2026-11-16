@@ -10,6 +10,14 @@
 namespace epochkv
 {
 
+    struct ReplicationWriteTiming
+    {
+        double primary_prepare_ms = 0.0;
+        double backup_prepare_ms = 0.0;
+        double primary_commit_ms = 0.0;
+        double backup_commit_ms = 0.0;
+    };
+
     class PrimaryReplicator
     {
     public:
@@ -20,6 +28,8 @@ namespace epochkv
         bool erase(const std::string &key);
         void reconcile();
 
+        std::optional<ReplicationWriteTiming> lastWriteTiming() const;
+
     private:
         Database &database_;
 
@@ -27,9 +37,11 @@ namespace epochkv
 
         bool needs_reconciliation_ = true;
 
-        void replicatePrepared(std::uint64_t sequence_number);
+        void replicatePrepared(std::uint64_t sequence_number, ReplicationWriteTiming timing);
 
         void ensureReady() const;
+
+        std::optional<ReplicationWriteTiming> last_write_timing_;
     };
 
 }

@@ -57,6 +57,12 @@ add_executable(
 
 target_link_libraries(epochkv_backup PRIVATE epochkv_core)
 
+add_executable(epochkv_replication_profile
+    tools/ReplicationProfile.cpp
+)
+
+target_link_libraries(epochkv_replication_profile PRIVATE epochkv_core)
+
 if(BUILD_TESTING)
     add_executable(
         key_value_store_tests
