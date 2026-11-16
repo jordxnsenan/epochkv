@@ -147,9 +147,16 @@ namespace
 
 int main(int argument_count, char *arguments[])
 {
-    if (argument_count != 4)
+
+    constexpr int STANDARD_ARGUMENT_COUNT = 4;
+    constexpr int CSV_ARGUMENT_COUNT = 5;
+
+    bool csv_output = argument_count == CSV_ARGUMENT_COUNT &&
+                      std::string(arguments[4]) == "--csv";
+
+    if (argument_count != STANDARD_ARGUMENT_COUNT && !csv_output)
     {
-        std::cerr << "Usage: epochkv_benchmark <port> <put|get> <requests>\n";
+        std::cerr << "Usage: epochkv_benchmark <port> <put|get> <requests> [--csv]\n";
 
         return EXIT_FAILURE;
     }
@@ -213,19 +220,35 @@ int main(int argument_count, char *arguments[])
 
         std::sort(latencies_ms.begin(), latencies_ms.end());
 
-        std::cout << std::fixed << std::setprecision(2)
-                  << "Operation: " << command << '\n'
-                  << "Requests: " << request_count << '\n'
-                  << "Value size: " << BENCHMARK_VALUE_BYTES << " bytes\n"
-                  << "Throughput: " << request_count / elapsed_seconds
-                  << " requests/sec\n"
-                  << "p50 latency: " << percentileLatency(latencies_ms, 50.0)
-                  << " ms\n"
-                  << "p95 latency: " << percentileLatency(latencies_ms, 95.0)
-                  << " ms\n"
-                  << "p99 latency: " << percentileLatency(latencies_ms, 99.0)
-                  << " ms\n";
+        double throughput = request_count / elapsed_seconds;
+        double p50_latency = percentileLatency(latencies_ms, 50.0);
+        double p95_latency = percentileLatency(latencies_ms, 95.0);
+        double p99_latency = percentileLatency(latencies_ms, 99.0);
+
+        if (csv_output)
+        {
+            std::cout << std::fixed << std::setprecision(6)
+                      << command << ','
+                      << request_count << ','
+                      << BENCHMARK_VALUE_BYTES << ','
+                      << throughput << ','
+                      << p50_latency << ','
+                      << p95_latency << ','
+                      << p99_latency << '\n';
+        }
+        else
+        {
+            std::cout << std::fixed << std::setprecision(2)
+                      << "Operation: " << command << '\n'
+                      << "Requests: " << request_count << '\n'
+                      << "Value size: " << BENCHMARK_VALUE_BYTES << " bytes\n"
+                      << "Throughput: " << throughput << " requests/sec\n"
+                      << "p50 latency: " << p50_latency << " ms\n"
+                      << "p95 latency: " << p95_latency << " ms\n"
+                      << "p99 latency: " << p99_latency << " ms\n";
+        }
     }
+
     catch (const std::exception &error)
     {
         std::cerr << "Benchmark error: " << error.what() << '\n';
